@@ -162,54 +162,56 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  uint16_t raw[3] = {0};
-	  float deg[3] = {0};
-//	  for(int ch = 0; ch < 8; ch++) {
-//	      uint8_t mask = 1 << ch;
-//	      HAL_I2C_Master_Transmit(&hi2c1, (0x70 << 1), &mask, 1, 10);
-//
-//	      HAL_StatusTypeDef ret = HAL_I2C_IsDeviceReady(&hi2c1, (0x36 << 1), 1, 10);
-//
-//	      if(ret == HAL_OK) {
-//	          printf("AS5600 FOUND on channel %d\r\n", ch);
-//	      } else {
-////	          printf("Channel %d: Not found\n", ch);
-//	      }
-//	  }
-//	  uint8_t channels[3] = {5, 6, 7};
-//	  for (uint8_t i = 0; i < 3; ++i)
-//	  {
-//		  if (TCA_Select(channels[i]) == HAL_OK && AS5600_ReadRaw(&raw[i]) == HAL_OK)
-//	    {
-//	      raw[i] &= 0x0FFF; // จำกัด 12-bit
-//	      deg[i] = (raw[i] * 360.0f) / 4096.0f;
-//	    }
-//	    else //little change
-//	    {
-//	      deg[i] = -1.0f; // ถ้าอ่านไม่ได้
-//	    }
-//	  }
-
 	  // ===== 2) อ่านค่าโพเทนจาก ADC (DMA อัปเดตอยู่ตลอด) =====
 	  //Correct Right now swap 3->2 and 2->1
 //	  float duty1 = 0.0f;
 //	  float duty2 = 67.0f;
 //	  float duty3 = 46.0f;
 	  const float FLOOR1 = 0.0f; //67.0f
-	  const float FLOOR2 = 0.0f; //46.0f
-	  const float FLOOR3 = 0.0f; //0.0f
+	  const float FLOOR2 = 67.0f; //46.0f
+	  const float FLOOR3 = 46.0f; //0.0f
 	  const float CEILING = 100.0f;
 
 	  float duty1 = FLOOR1;
 	  float duty2 = FLOOR2;
 	  float duty3 = FLOOR3;
-
-	  // Flags to track direction: 1 = going up, -1 = going down
+//
+//	  // Flags to track direction: 1 = going up, -1 = going down
 	  int dir1 = 1;
 	  int dir2 = 1;
 	  int dir3 = 1;
-
+//
 	  while (1) { // Continuous operation loop
+		  uint16_t raw[3] = {0};
+		  	  float deg[3] = {0};
+		  	  for(int ch = 0; ch < 8; ch++) {
+		  	      uint8_t mask = 1 << ch;
+		  	      HAL_I2C_Master_Transmit(&hi2c1, (0x70 << 1), &mask, 1, 10);
+
+		  	      HAL_StatusTypeDef ret = HAL_I2C_IsDeviceReady(&hi2c1, (0x36 << 1), 1, 10);
+
+		  	      if(ret == HAL_OK) {
+		  //	          printf("AS5600 FOUND on channel %d\r\n", ch);
+		  	      } else {
+		  //	          printf("Channel %d: Not found\r\n", ch);
+		  	      }
+		  	  }
+		  	  uint8_t channels[3] = {5, 6, 7};
+		  	  for (uint8_t i = 0; i < 3; ++i)
+		  	  {
+		  		  if (TCA_Select(channels[i]) == HAL_OK && AS5600_ReadRaw(&raw[i]) == HAL_OK)
+		  	    {
+		  	      raw[i] &= 0x0FFF; // จำกัด 12-bit
+		  	      deg[i] = (raw[i] * 360.0f) / 4096.0f;
+		  	    }
+		  	    else //little change
+		  	    {
+		  	      deg[i] = -1.0f; // ถ้าอ่านไม่ได้
+		  	    }
+		  	  }
+
+		  printf("Magnetic Sensor(deg): [%.1f, %.1f, %.1f]\r\n", deg[0], deg[1], deg[2]);
+
 
 	      // Adjust these values to control the speed of the ramp
 	      float step = 1.0f;
@@ -225,8 +227,8 @@ int main(void)
 	          dir1 = 1; // Change direction to up
 	      }
 	      PWM_SetDuty(&htim1, TIM_CHANNEL_1, duty1);
-
-	      // --- Channel 2 ---
+//
+//	      // --- Channel 2 ---
 	      duty2 += step * dir2;
 	      if (duty2 >= CEILING) {
 	          duty2 = CEILING;
@@ -236,8 +238,8 @@ int main(void)
 	          dir2 = 1; // Change direction to up
 	      }
 	      PWM_SetDuty(&htim3, TIM_CHANNEL_2, duty2);
-
-	      // --- Channel 3 ---
+//
+//	      // --- Channel 3 ---
 	      duty3 += step * dir3;
 	      if (duty3 >= CEILING) {
 	          duty3 = CEILING;
@@ -247,13 +249,14 @@ int main(void)
 	          dir3 = 1; // Change direction to up
 	      }
 	      PWM_SetDuty(&htim4, TIM_CHANNEL_1, duty3);
-
-	      // Print status
+//
+//	      // Print status
 	      printf("PWM Duty(%%): [%.1f, %.1f, %.1f]\r\n", duty1, duty2, duty3);
-
-	      // Mandatory delay to control ramp speed and prevent system lockup
+//
+//	      // Mandatory delay to control ramp speed and prevent system lockup
 	      HAL_Delay(delay_ms);
 	  }
+}
 
 
 
@@ -271,7 +274,7 @@ int main(void)
 //	  }
 
 //	  printf("AS5600(deg): [%.1f, %.1f, %.1f]  |  PWM Duty(%%): [%.1f, %.1f, %.1f]\r\n",deg[0], deg[1], deg[2], duty1, duty2, duty3);
-	  printf("PWM Duty(%%): [%.1f, %.1f, %.1f]\r\n", duty1, duty2, duty3);
+//	  printf("PWM Duty(%%): [%.1f, %.1f, %.1f]\r\n", duty1, duty2, duty3);
 	  HAL_Delay(200); // พิมพ์ทุก 200ms
 
 	      // (ออปชัน) พิมพ์ผลทุก ~200 ms ผ่าน UART ดูค่าได้ใน Serial
@@ -281,7 +284,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
-}
+//}
 
 /**
   * @brief System Clock Configuration
